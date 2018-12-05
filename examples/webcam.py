@@ -53,9 +53,15 @@ def get_face_frame(preds):
     T = np.stack((x_dir, y_dir, z_dir), axis=1)
     
     # get origin
-    origin = preds[30, :] # (3,)
+    origin = preds[27, :] # (3,)
     
-    return origin, T
+    # get scale
+    l_tip = preds[0, :]
+    r_tip = preds[16, :]
+    face_width = np.sum((l_tip - r_tip)**2)**0.5
+    face_scale = face_width / 2.0
+
+    return origin, T, face_scale
     
 def draw_face_frame(img, origin, axes, size):
     '''
@@ -101,10 +107,9 @@ while(True):
         for seg in segments:
             draw_segment(img_show, seg, color=(128, 128, 128))
     
-        face_origin, face_axes = get_face_frame(preds)
-        axis_len = 60
+        face_origin, face_axes, face_scale = get_face_frame(preds)
         
-        draw_face_frame(img_show, face_origin, face_axes, axis_len)
+        draw_face_frame(img_show, face_origin, face_axes, face_scale)
 
     cv2.imshow('test',img_show)
     if cv2.waitKey(1) & 0xFF == ord('q'): 
