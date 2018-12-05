@@ -19,13 +19,73 @@ def get_3d_points(preds):
         segments.append(cur_segment)
     return segments
 
-def draw_segment(img, segment):
+def draw_segment(img, segment, color=(0, 255, 0)):
     x0, y0, z0 = segment[0]
     for i in range(1, len(segment)):
         x, y, z = segment[i]
-        cv2.line(img, (int(x0), int(y0)), (int(x), int(y)), (0, 255, 0), 2)
+        cv2.line(img, (int(x0), int(y0)), (int(x), int(y)), color, 2)
         x0, y0, z0 = x, y, z
+
+def get_face_frame(preds):
+    nose_tip = preds[28, :]
+    l_par = preds[0:4, :]
+    r_par = preds[13:17, :]
+    bottom_tip = preds[8, :]
+    
+    # get z direction
+    z_dir = ((nose_tip - l_par) + (nose_tip - r_par)) / 2.0
+    z_dir = -np.mean(z_dir, axis=0) # (3, )
+    z_dir = z_dir / np.linalg.norm(z_dir)
+
+    # get temp y direction
+    y0_dir = ((bottom_tip - l_par) + (bottom_tip - r_par)) / 2.0
+    y0_dir = np.mean(y0_dir, axis=0) # (3, )
+
+    # get x direction
+    x_dir = np.cross(y0_dir, z_dir)
+    x_dir = x_dir / np.linalg.norm(x_dir)
+
+    # get y direction
+    y_dir = np.cross(z_dir, x_dir)
+    y_dir = y_dir / np.linalg.norm(y_dir)
+
+    # from face frame to screen frame
+    T = np.stack((x_dir, y_dir, z_dir), axis=1)
+    
+    # get origin
+    origin = preds[30, :] # (3,)
+    
+    return origin, T
+    
+def draw_face_frame(img, origin, axes, size):
+    '''
+    print(axes)
+    print(size)
+    print(origin)
+    '''
+    
+    vecs = axes*size + origin.reshape(-1, 1)
+    endpoints2d = vecs[:2, :]
+
+    '''
+    print(vecs)
+    print(endpoints2d)
+
+    print(origin)
+    '''
+
+    ox, oy = origin[:2]
+
+    '''
+    print(ox, oy)
+    '''
+
+    colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]
+    for i in range(3):
+        ex, ey = endpoints2d[:, i]
+        cv2.line(img, (int(ox), int(oy)), (int(ex), int(ey)), colors[i], 2)
         
+
 cap = cv2.VideoCapture(0)
 while(True):
     ret, img = cap.read()
@@ -39,8 +99,13 @@ while(True):
         preds = all_preds[-1]
         segments = get_3d_points(preds)
         for seg in segments:
-            draw_segment(img_show, seg)
+            draw_segment(img_show, seg, color=(128, 128, 128))
     
+        face_origin, face_axes = get_face_frame(preds)
+        axis_len = 60
+        
+        draw_face_frame(img_show, face_origin, face_axes, axis_len)
+
     cv2.imshow('test',img_show)
     if cv2.waitKey(1) & 0xFF == ord('q'): 
         break
