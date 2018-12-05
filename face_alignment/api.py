@@ -153,6 +153,7 @@ class FaceAlignment:
             detected_faces {list of numpy.array} -- list of bounding boxes, one for each face found
             in the image (default: {None})
         """
+
         if isinstance(image_or_path, str):
             try:
                 image = io.imread(image_or_path)
@@ -173,6 +174,11 @@ class FaceAlignment:
         if len(detected_faces) == 0:
             print("Warning: No faces were detected.")
             return None
+
+        # pick the largest face
+        sort_det_key = lambda d: -(d[3]-d[1]+d[2]-d[0])
+        detected_faces.sort(key=sort_det_key)
+        detected_faces = detected_faces[0:1]
 
         torch.set_grad_enabled(False)
         landmarks = []
