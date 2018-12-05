@@ -90,7 +90,27 @@ def draw_face_frame(img, origin, axes, size):
     for i in range(3):
         ex, ey = endpoints2d[:, i]
         cv2.line(img, (int(ox), int(oy)), (int(ex), int(ey)), colors[i], 2)
-        
+
+def get_9points(face_origin, face_axes, face_scale):
+    x = face_axes[:, 0]
+    y = face_axes[:, 1]
+
+    kps = list()
+
+    for i in range(-1, 2):
+        for j in range(-1, 2):
+            kp = face_origin + i * x * face_scale + j * y * face_scale
+            kp = kp[0:2]
+            kps.append(kp)
+
+    kps = np.array(kps)
+    return kps
+
+def draw_9points(img, kps):
+    for kp in kps:
+        x, y = kp
+        cv2.circle(img, (int(x), int(y)), 2, (255, 255, 255))
+    
 
 cap = cv2.VideoCapture(0)
 while(True):
@@ -110,6 +130,9 @@ while(True):
         face_origin, face_axes, face_scale = get_face_frame(preds)
         
         draw_face_frame(img_show, face_origin, face_axes, face_scale)
+
+        kps = get_9points(face_origin, face_axes, face_scale)
+        draw_9points(img_show, kps)
 
     cv2.imshow('test',img_show)
     if cv2.waitKey(1) & 0xFF == ord('q'): 
