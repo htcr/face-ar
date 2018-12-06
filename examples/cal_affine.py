@@ -30,16 +30,17 @@ def warp_glass(glass_name, dst_name, M):
 
 def warp_glass_from_img(glass, background, M):
     size = background.shape[0:2][::-1]
-    glass_warp = cv2.warpAffine(glass, M, size, borderValue=(255,255,255))
+    glass_warp = cv2.warpAffine(glass, M, size, borderValue=(0,255,0))
     '''
     plt.imshow(glass)
     plt.grid()
     plt.show()
     '''
     
-    glass_warp = cv2.cvtColor(glass_warp, cv2.COLOR_BGR2GRAY)
-    glass_warp = glass_warp > 128.0
-    output = background * glass_warp[:,:,np.newaxis]
+    #mask = cv2.cvtColor(glass_warp, cv2.COLOR_BGR2GRAY)
+    mask = (np.logical_and(np.logical_and(glass_warp[:,:,1] > 200,glass_warp[:,:,2] < 50),
+                           glass_warp[:,:,0] < 50)).astype(np.uint8)[:,:,np.newaxis]
+    output = (background * mask + glass_warp*(1-mask))
     return output
 
 
@@ -64,7 +65,7 @@ if __name__=='__main__':
     dst = np.array(dst)
     
     img = glass = cv2.imread('face.jpg', cv2.IMREAD_COLOR)
-    glass_img = cv2.imread('glass.jpg', cv2.IMREAD_COLOR)
+    glass_img = cv2.imread('thug.jpg', cv2.IMREAD_COLOR)
 
     img = generate_glass_img(img, dst, glass_img, src)
     plt.imshow(img[:,:,[2,1,0]])
