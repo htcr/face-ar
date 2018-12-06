@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from skimage import io
 import cv2
 from cal_affine import generate_glass_img
+import os
 
 # Run the 3D face alignment on a test image, without CUDA.
 fa = face_alignment.FaceAlignment(face_alignment.LandmarksType._3D, device='cuda:0', flip_input=False)
@@ -113,6 +114,7 @@ def draw_9points(img, kps):
         cv2.circle(img, (int(x), int(y)), 2, (255, 255, 255))
 
 
+'''
 glass_points = []
 
 for x in [0, 400, 800]:
@@ -123,6 +125,24 @@ glass_points = np.array(glass_points)
 ar_obj_path = 'glass.jpg'
 ar_obj_kps = glass_points
 ar_obj = cv2.imread('glass.jpg', cv2.IMREAD_COLOR)
+'''
+
+ar_obj_name = 'pirate'
+objs_dir = 'objs'
+ar_obj_path = os.path.join(objs_dir, ar_obj_name, ar_obj_name+'.jpg')
+ar_obj = cv2.imread(ar_obj_path, cv2.IMREAD_COLOR)
+
+ar_obj_kps_path = os.path.join(objs_dir, ar_obj_name, 'kps.txt')
+ar_obj_kps = list()
+with open(ar_obj_kps_path, 'r') as kps_file:
+    center = kps_file.readline()
+    center = [int(x) for x in center.strip().split(' ')]
+    cx, cy = center
+    step = int(kps_file.readline().strip())
+    for i in range(-1, 2):
+        for j in range(-1, 2):
+            ar_obj_kps.append((cx + i*step, cy + j*step))
+ar_obj_kps = np.array(ar_obj_kps)
 
 cap = cv2.VideoCapture(0)
 while(True):
