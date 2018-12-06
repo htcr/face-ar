@@ -111,7 +111,7 @@ def get_9points(face_origin, face_axes, face_scale):
 def draw_9points(img, kps):
     for kp in kps:
         x, y = kp
-        cv2.circle(img, (int(x), int(y)), 2, (255, 255, 255))
+        cv2.circle(img, (int(x), int(y)), 4, (255, 255, 255), 2)
 
 
 '''
@@ -145,12 +145,17 @@ with open(ar_obj_kps_path, 'r') as kps_file:
 ar_obj_kps = np.array(ar_obj_kps)
 
 cap = cv2.VideoCapture(0)
+
+fourcc = cv2.VideoWriter_fourcc(*'XVID')
+out = cv2.VideoWriter('output.avi',fourcc, 20.0, (320,240))
+
 while(True):
     ret, img = cap.read()
     img = cv2.resize(img, (320, 240))
 
-    img_show = img.copy()
-    img_ar = img
+    img_kps = img.copy()
+    img_9ps = img.copy()
+    img_ar = img.copy()
 
     all_preds = fa.get_landmarks(img)
 
@@ -159,18 +164,25 @@ while(True):
         
         segments = get_3d_points(preds)
         for seg in segments:
-            draw_segment(img_show, seg, color=(128, 128, 128))
+            draw_segment(img_9ps, seg, color=(128, 128, 128))
     
         face_origin, face_axes, face_scale = get_face_frame(preds)
         
-        draw_face_frame(img_show, face_origin, face_axes, face_scale)
+        draw_face_frame(img_9ps, face_origin, face_axes, face_scale)
 
         kps = get_9points(face_origin, face_axes, face_scale)
-        draw_9points(img_show, kps)
+        draw_9points(img_9ps, kps)
 
         img_ar = generate_glass_img(img, kps, ar_obj, ar_obj_kps)
 
-    cv2.imshow('test',img_show)
+    out.write(img_9ps)
+    cv2.imshow('original', img)
+    cv2.imshow('kps', img_kps)
+    cv2.imshow('9ps', img_9ps)
     cv2.imshow('ar', img_ar)
     if cv2.waitKey(1) & 0xFF == ord('q'): 
         break
+
+cap.release()
+out.release()
+cv2.destroyAllWindows()
