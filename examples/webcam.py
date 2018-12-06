@@ -4,6 +4,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 from skimage import io
 import cv2
+from cal_affine import generate_glass_img
 
 # Run the 3D face alignment on a test image, without CUDA.
 fa = face_alignment.FaceAlignment(face_alignment.LandmarksType._3D, device='cuda:0', flip_input=False)
@@ -110,7 +111,18 @@ def draw_9points(img, kps):
     for kp in kps:
         x, y = kp
         cv2.circle(img, (int(x), int(y)), 2, (255, 255, 255))
-    
+
+
+glass_points = []
+
+for x in [0, 400, 800]:
+    for y in [-100, 300, 700]:
+        glass_points.append([x,y])
+glass_points = np.array(glass_points)
+
+ar_obj_path = 'glass.jpg'
+ar_obj_kps = glass_points
+ar_obj = cv2.imread('glass.jpg', cv2.IMREAD_COLOR)
 
 cap = cv2.VideoCapture(0)
 while(True):
@@ -118,6 +130,7 @@ while(True):
     img = cv2.resize(img, (320, 240))
 
     img_show = img.copy()
+    img_ar = img
 
     all_preds = fa.get_landmarks(img)
 
@@ -134,6 +147,9 @@ while(True):
         kps = get_9points(face_origin, face_axes, face_scale)
         draw_9points(img_show, kps)
 
+        img_ar = generate_glass_img(img, kps, ar_obj, ar_obj_kps)
+
     cv2.imshow('test',img_show)
+    cv2.imshow('ar', img_ar)
     if cv2.waitKey(1) & 0xFF == ord('q'): 
         break
